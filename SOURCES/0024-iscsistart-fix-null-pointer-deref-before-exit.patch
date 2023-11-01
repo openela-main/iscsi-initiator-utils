@@ -1,0 +1,42 @@
+From b9bf7cea4769efa73e6de9b13a8d1833d2ac3d92 Mon Sep 17 00:00:00 2001
+From: Chris Leech <cleech@redhat.com>
+Date: Wed, 16 Jun 2021 09:55:06 -0700
+Subject: [PATCH 1/1] iscsistart: fix null pointer deref before exit
+
+Fixes regression caused by "open-iscsi: Clean user_param list when
+process exit"  Which is a shame, as not freeing a memory at process exit
+doesn't really hurt anything.
+
+Same change as "Fix iscsiadm segfault when exiting" applied to iscsiadm.
+
+Fixes: b532ad67d495d42026165a26515c645995d23f18
+Signed-off-by: Chris Leech <cleech@redhat.com>
+---
+ usr/iscsistart.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/usr/iscsistart.c b/usr/iscsistart.c
+index 206cd4c..7eb573e 100644
+--- a/usr/iscsistart.c
++++ b/usr/iscsistart.c
+@@ -361,7 +361,7 @@ int main(int argc, char *argv[])
+ 	struct boot_context *context, boot_context;
+ 	struct sigaction sa_old;
+ 	struct sigaction sa_new;
+-	struct user_param *param;
++	struct user_param *param, *tmp_param;
+ 	int control_fd, mgmt_ipc_fd, err;
+ 	pid_t pid;
+ 
+@@ -556,7 +556,7 @@ int main(int argc, char *argv[])
+ 	mgmt_ipc_close(mgmt_ipc_fd);
+ 	free_initiator();
+ 	sysfs_cleanup();
+-	list_for_each_entry(param, &user_params, list) {
++	list_for_each_entry_safe(param, tmp_param, &user_params, list) {
+ 		list_del(&param->list);
+ 		idbm_free_user_param(param);
+ 	}
+-- 
+2.31.1
+
