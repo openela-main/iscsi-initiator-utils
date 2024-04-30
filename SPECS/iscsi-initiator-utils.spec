@@ -1,48 +1,44 @@
 %global open_iscsi_version	2.1
-%global open_iscsi_build	4
-%global commit0			2a8f9d81d0d6b5094c3fe9c686e2afb2ec27058a
+%global open_iscsi_build	9
+%global commit0			a65a472a35b436c7a2d47c5862aae530ac4ae9c8
 %global shortcommit0		%(c=%{commit0}; echo ${c:0:7})
 
 # Disable python2 build by default
-%bcond_with python2
+%bcond python2 0
+%bcond python3 1
 
 Summary: iSCSI daemon and utility programs
 Name: iscsi-initiator-utils
 Version: 6.%{open_iscsi_version}.%{open_iscsi_build}
-Release: 3.git%{shortcommit0}%{?dist}
-License: GPLv2+
+Release: 1.git%{shortcommit0}%{?dist}
+License: GPL-2.0-or-later
 URL: https://github.com/open-iscsi/open-iscsi
 Source0: https://github.com/open-iscsi/open-iscsi/archive/%{commit0}.tar.gz#/open-iscsi-%{shortcommit0}.tar.gz
 Source4: 04-iscsi
 Source5: iscsi-tmpfiles.conf
 
-Patch0001: 0001-unit-file-tweaks.patch
-Patch0002: 0002-idmb_rec_write-check-for-tpgt-first.patch
-Patch0003: 0003-idbm_rec_write-seperate-old-and-new-style-writes.patch
-Patch0004: 0004-idbw_rec_write-pick-tpgt-from-existing-record.patch
-Patch0005: 0005-update-initscripts-and-docs.patch
-Patch0006: 0006-use-var-for-config.patch
-Patch0007: 0007-use-red-hat-for-name.patch
-Patch0008: 0008-libiscsi.patch
-Patch0009: 0009-Add-macros-to-release-GIL-lock.patch
-Patch0010: 0010-libiscsi-introduce-sessions-API.patch
-Patch0011: 0011-libiscsi-fix-discovery-request-timeout-regression.patch
-Patch0012: 0012-libiscsi-format-security-build-errors.patch
-Patch0013: 0013-libiscsi-fix-build-to-use-libopeniscsiusr.patch
-Patch0014: 0014-libiscsi-fix-build-against-latest-upstream-again.patch
-Patch0015: 0015-remove-the-offload-boot-supported-ifdef.patch
-Patch0016: 0016-Revert-iscsiadm-return-error-when-login-fails.patch
-Patch0017: 0017-dont-install-scripts.patch
-Patch0018: 0018-use-var-lib-iscsi-in-libopeniscsiusr.patch
-Patch0019: 0019-Coverity-scan-fixes.patch
-Patch0020: 0020-fix-upstream-build-breakage-of-iscsiuio-LDFLAGS.patch
-Patch0021: 0021-use-Red-Hat-version-string-to-match-RPM-package-vers.patch
-Patch0022: 0022-iscsi_if.h-replace-zero-length-array-with-flexible-a.patch
-Patch0023: 0023-stop-using-Werror-for-now.patch
-Patch0024: 0024-minor-service-file-updates.patch
-Patch0025: 0001-Remove-dependences-from-iscsi-init.service.patch
-Patch0026: 0001-fix-libiscsi-firmware-discovery-issue-with-NULL-drec.patch
+Patch01: 0001-meson-don-t-hide-things-with-Wno-all.patch
 
+# https://github.com/open-iscsi/open-iscsi/pull/394/
+Patch02: 0002-Currently-when-iscsi.service-is-installed-it-creates.patch
+Patch03: 0003-Use-DBROOT-in-iscsi-starter.-Include-iscsi-starter-i.patch
+Patch04: 0004-fix-systemctl-path-in-iscsi-starter.service.patch
+
+# Fedora / Red Hat stuff, merge more of this upstream?
+Patch05: 0005-improved-onboot-and-shutdown-services.patch
+Patch06: 0006-iscsid.conf-Fedora-Red-Hat-defaults.patch
+Patch07: 0007-Disable-Data-Digests.patch
+Patch08: 0008-Revert-iscsiadm-return-error-when-login-fails.patch
+Patch09: 0009-Coverity-scan-fixes.patch
+Patch10: 0010-use-Red-Hat-version-string-to-match-RPM-package-vers.patch
+
+# libiscsi, deprecated but still needed until UDisks2 is converted to libopeniscsiusr
+Patch101: 0101-libiscsi.patch
+Patch102: 0102-libiscsi-introduce-sessions-API.patch
+Patch103: 0103-fix-libiscsi-firmware-discovery-issue-with-NULL-drec.patch
+Patch104: 0104-libiscsi-build-fixes.patch
+
+BuildRequires: meson git
 BuildRequires: flex bison doxygen kmod-devel systemd-units
 BuildRequires: autoconf automake libtool libmount-devel openssl-devel
 BuildRequires: isns-utils-devel
@@ -56,7 +52,7 @@ Requires(postun): systemd
 Conflicts: NetworkManager < 1.20
 
 %global _hardened_build 1
-%global __provides_exclude_from ^(%{python2_sitearch}/.*\\.so|%{python3_sitearch}/.*\\.so)$
+%global __provides_exclude_from ^(%{?python2_sitearch:%{python2_sitearch}/.*\\.so}|%{?python3_sitearch:%{python3_sitearch}/.*\\.so})$
 
 %description
 The iscsi package provides the server daemon for the iSCSI protocol,
@@ -66,7 +62,7 @@ Protocol networks.
 
 %package iscsiuio
 Summary: Userspace configuration daemon required for some iSCSI hardware
-License: BSD
+License: BSD-4-Clause
 Requires: %{name} = %{version}-%{release}
 
 %description iscsiuio
@@ -95,6 +91,7 @@ libiscsi interface for interacting with %{name}
 %endif
 # ended with python2
 
+%if %{with python3}
 %package -n python3-%{name}
 %{?python_provide:%python_provide python3-%{name}}
 Summary: Python %{python3_version} bindings to %{name}
@@ -106,47 +103,32 @@ BuildRequires: make
 %description -n python3-%{name}
 The %{name}-python3 package contains Python %{python3_version} bindings to the
 libiscsi interface for interacting with %{name}
+%endif
+# ended with python3
 
 %prep
-%autosetup -p1 -n open-iscsi-%{commit0}
-
-# change exec_prefix, there's no easy way to override
-%{__sed} -i -e 's|^exec_prefix = /$|exec_prefix = %{_exec_prefix}|' Makefile
+%autosetup -p1 -n open-iscsi-%{commit0} -Sgit_am
 
 %build
 # avoid undefined references linking failures
 %undefine _ld_as_needed
 
-# configure sub-packages from here
-# letting the top level Makefile do it will lose setting from rpm
-cd iscsiuio
-autoreconf --install
-%{configure}
-cd ..
+%meson -Diqn_prefix=iqn.1994-05.com.redhat
+%meson_build
 
-%{__make} OPTFLAGS="%{optflags} %{?__global_ldflags}"
+%make_build LDFLAGS="%{build_ldflags}" iqn_prefix=iqn.1994-05.com.redhat DBROOT=/var/lib/iscsi libiscsi
 pushd libiscsi
 %if %{with python2}
-%py2_build
+  %py2_build
 %endif
-# ended with python2
-%py3_build
+%if %{with python3}
+  %py3_build
+%endif
 touch -r libiscsi.doxy html/*
 popd
 
-
 %install
-%{__make} DESTDIR=%{?buildroot} install_programs install_doc install_etc install_libopeniscsiusr
-# upstream makefile doesn't get everything the way we like it
-#rm $RPM_BUILD_ROOT%%{_sbindir}/iscsi_discovery
-rm $RPM_BUILD_ROOT%{_mandir}/man8/iscsi_discovery.8
-rm $RPM_BUILD_ROOT%{_mandir}/man8/iscsi_fw_login.8
-%{__install} -pm 755 usr/iscsistart $RPM_BUILD_ROOT%{_sbindir}
-%{__install} -pm 644 doc/iscsistart.8 $RPM_BUILD_ROOT%{_mandir}/man8
-%{__install} -pm 644 doc/iscsi-iname.8 $RPM_BUILD_ROOT%{_mandir}/man8
-%{__install} -d $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d
-%{__install} -pm 644 iscsiuio/iscsiuiolog $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d
-
+%meson_install
 %{__install} -d $RPM_BUILD_ROOT%{_sharedstatedir}/iscsi
 %{__install} -d $RPM_BUILD_ROOT%{_sharedstatedir}/iscsi/nodes
 %{__install} -d $RPM_BUILD_ROOT%{_sharedstatedir}/iscsi/send_targets
@@ -159,16 +141,20 @@ rm $RPM_BUILD_ROOT%{_mandir}/man8/iscsi_fw_login.8
 %{__install} -d $RPM_BUILD_ROOT%{_rundir}/lock/iscsi
 touch $RPM_BUILD_ROOT%{_rundir}/lock/iscsi/lock
 
-
-%{__install} -d $RPM_BUILD_ROOT%{_unitdir}
-%{__install} -pm 644 etc/systemd/iscsi.service $RPM_BUILD_ROOT%{_unitdir}
-%{__install} -pm 644 etc/systemd/iscsi-init.service $RPM_BUILD_ROOT%{_unitdir}
-%{__install} -pm 644 etc/systemd/iscsi-onboot.service $RPM_BUILD_ROOT%{_unitdir}
-%{__install} -pm 644 etc/systemd/iscsi-shutdown.service $RPM_BUILD_ROOT%{_unitdir}
-%{__install} -pm 644 etc/systemd/iscsid.service $RPM_BUILD_ROOT%{_unitdir}
-%{__install} -pm 644 etc/systemd/iscsid.socket $RPM_BUILD_ROOT%{_unitdir}
-%{__install} -pm 644 etc/systemd/iscsiuio.service $RPM_BUILD_ROOT%{_unitdir}
-%{__install} -pm 644 etc/systemd/iscsiuio.socket $RPM_BUILD_ROOT%{_unitdir}
+# upstream started installing a bunch of optional stuff from other distros
+# maybe we can make use of these, but clean up for now
+rm $RPM_BUILD_ROOT/etc/iscsi/initiatorname.iscsi
+rm $RPM_BUILD_ROOT/etc/udev/rules.d/50-iscsi-firmware-login.rules
+rm $RPM_BUILD_ROOT/usr/lib/systemd/system-generators/ibft-rule-generator
+rm $RPM_BUILD_ROOT/usr/sbin/brcm_iscsiuio
+rm $RPM_BUILD_ROOT/usr/sbin/iscsi-gen-initiatorname
+rm $RPM_BUILD_ROOT/usr/sbin/iscsi_discovery
+rm $RPM_BUILD_ROOT/usr/sbin/iscsi_fw_login
+rm $RPM_BUILD_ROOT/usr/sbin/iscsi_offload
+rm $RPM_BUILD_ROOT/usr/share/man/man8/iscsi-gen-initiatorname.8
+rm $RPM_BUILD_ROOT/usr/share/man/man8/iscsi_discovery.8
+rm $RPM_BUILD_ROOT/usr/share/man/man8/iscsi_fw_login.8
+rm $RPM_BUILD_ROOT/var/lib/iscsi/ifaces/iface.example
 
 %{__install} -d $RPM_BUILD_ROOT%{_libexecdir}
 %{__install} -pm 755 etc/systemd/iscsi-mark-root-nodes $RPM_BUILD_ROOT%{_libexecdir}
@@ -185,28 +171,26 @@ touch $RPM_BUILD_ROOT%{_rundir}/lock/iscsi/lock
 %{__install} -d $RPM_BUILD_ROOT%{_includedir}
 %{__install} -pm 644 libiscsi/libiscsi.h $RPM_BUILD_ROOT%{_includedir}
 
-%if %{with python2}
-%{__install} -d $RPM_BUILD_ROOT%{python2_sitearch}
-%endif
-# ended with python2
-%{__install} -d $RPM_BUILD_ROOT%{python3_sitearch}
 pushd libiscsi
 %if %{with python2}
-%py2_install
+  %{__install} -d $RPM_BUILD_ROOT%{python2_sitearch}
+  %py2_install
 %endif
-# ended with python2
-%py3_install
+%if %{with python3}
+  %{__install} -d $RPM_BUILD_ROOT%{python3_sitearch}
+  %py3_install
+%endif
 popd
 
 
 %post
-%systemd_post iscsi.service iscsid.service iscsid.socket iscsi-onboot.service iscsi-init.service iscsi-shutdown.service
+%systemd_post iscsi.service iscsi-starter.service iscsid.service iscsid.socket iscsi-onboot.service iscsi-init.service iscsi-shutdown.service
 
 %preun
-%systemd_preun iscsi.service iscsid.service iscsid.socket iscsi-onboot.service iscsi-init.service iscsi-shutdown.service
+%systemd_preun iscsi.service iscsi-starter.service iscsid.service iscsid.socket iscsi-onboot.service iscsi-init.service iscsi-shutdown.service
 
 %postun
-%systemd_postun iscsi.service iscsid.service iscsid.socket iscsi-onboot.service iscsi-init.service iscsi-shutdown.service
+%systemd_postun iscsi.service iscsi-starter.service iscsid.service iscsid.socket iscsi-onboot.service iscsi-init.service iscsi-shutdown.service
 
 %post iscsiuio
 %systemd_post iscsiuio.service iscsiuio.socket
@@ -217,31 +201,9 @@ popd
 %postun iscsiuio
 %systemd_postun iscsiuio.service iscsiuio.socket
 
-%triggerun -- iscsi-initiator-utils < 6.2.0.873-25
-# prior to 6.2.0.873-24 iscsi.service was missing a Wants=remote-fs-pre.target
-# this forces remote-fs-pre.target active if needed for a clean shutdown/reboot
-# after upgrading this package
-if [ $1 -gt 0 ]; then
-    /usr/bin/systemctl -q is-active iscsi.service
-    if [ $? -eq 0 ]; then
-        /usr/bin/systemctl -q is-active remote-fs-pre.target
-        if [ $? -ne 0 ]; then
-            SRC=`/usr/bin/systemctl show --property FragmentPath remote-fs-pre.target | cut -d= -f2`
-            DST=/run/systemd/system/remote-fs-pre.target
-            if [ $SRC != $DST ]; then
-                cp $SRC $DST
-            fi
-            sed -i 's/RefuseManualStart=yes/RefuseManualStart=no/' $DST
-            /usr/bin/systemctl daemon-reload >/dev/null 2>&1 || :
-            /usr/bin/systemctl start remote-fs-pre.target >/dev/null 2>&1 || :
-        fi
-    fi
-fi
-# added in 6.2.0.873-25
-if [ $1 -gt 0 ]; then
-    systemctl start iscsi-shutdown.service >/dev/null 2>&1 || :
-fi
-
+%triggerun -- %{name} < 6.2.1.4-8
+# This is for upgrades from previous versions before iscsi-starter.service was added.
+systemctl --no-reload preset iscsi.service iscsi-starter.service &>/dev/null || :
 
 %files
 %doc README
@@ -252,9 +214,10 @@ fi
 %dir %{_sharedstatedir}/iscsi/slp
 %dir %{_sharedstatedir}/iscsi/ifaces
 %dir %{_sharedstatedir}/iscsi/send_targets
-%ghost %attr(0700, root, root) %{_rundir}/lock/iscsi
+%ghost %dir %attr(0700, root, root) %{_rundir}/lock/iscsi
 %ghost %attr(0600, root, root) %{_rundir}/lock/iscsi/lock
 %{_unitdir}/iscsi.service
+%{_unitdir}/iscsi-starter.service
 %{_unitdir}/iscsi-onboot.service
 %{_unitdir}/iscsi-init.service
 %{_unitdir}/iscsi-shutdown.service
@@ -294,6 +257,7 @@ fi
 %{_includedir}/libopeniscsiusr_node.h
 %{_includedir}/libopeniscsiusr_session.h
 %{_libdir}/pkgconfig/libopeniscsiusr.pc
+%{_mandir}/man3/*
 
 %if %{with python2}
 %files -n python2-%{name}
@@ -301,10 +265,16 @@ fi
 %endif
 # ended with python2
 
+%if %{with python3}
 %files -n python3-%{name}
 %{python3_sitearch}/*
+%endif
 
 %changelog
+* Wed Nov 15 2023 Chris Leech <cleech@redhat.com> - 6.2.1.9-18.gita65a472
+- rebase to upstream 2.1.9+ with iscsiuio 0.7.8.8
+- new meson build system, sync with fedora packaging
+
 * Wed Jun 15 2022 Chris Leech <cleech@redhat.com> - 6.2.1.4-3.git2a8f9d8
 - 2016611 fix libiscsi regression causing udisksd faults with firmware discovery
 

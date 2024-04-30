@@ -15,12 +15,12 @@ diff --git a/iscsiuio/src/unix/libs/qedi.c b/iscsiuio/src/unix/libs/qedi.c
 index 1af8d1b..9a814c6 100644
 --- a/iscsiuio/src/unix/libs/qedi.c
 +++ b/iscsiuio/src/unix/libs/qedi.c
-@@ -1030,7 +1030,7 @@ static int qedi_read(nic_t *nic, packet_t *pkt)
+@@ -1034,7 +1034,7 @@ static int qedi_read(nic_t *nic, packet_t *pkt)
  
- 	LOG_DEBUG(PFX "%s:hw_prod %d bd_prod %d, rx_pkt_idx %d, rxlen %d",
+ 	ILOG_DEBUG(PFX "%s:hw_prod %d bd_prod %d, rx_pkt_idx %d, rxlen %d",
  		  nic->log_name, hw_prod, bd_prod, rx_bd->rx_pkt_index, len);
--	LOG_DEBUG(PFX "%s: sw_con %d bd_cons %d num BD %d",
-+	LOG_DEBUG(PFX "%s: sw_con %d bd_cons %d num BD %lu",
+-	ILOG_DEBUG(PFX "%s: sw_con %d bd_cons %d num BD %d",
++	ILOG_DEBUG(PFX "%s: sw_con %d bd_cons %d num BD %lu",
  		  nic->log_name, sw_cons, bd_cons, QEDI_NUM_RX_BD);
  
  	if (bd_cons != bd_prod) {
@@ -33,7 +33,7 @@ index 0c9ad49..f83f305 100644
  	sigaddset(&set, SIGUSR1);
  	rc = pthread_sigmask(SIG_SETMASK, &set, NULL);
 +	if (rc != 0) {
-+		LOG_ERR("Failed to set thread signal mask");
++		ILOG_ERR("Failed to set thread signal mask");
 +	}
  
  	/*  Spin off the signal handling thread */
