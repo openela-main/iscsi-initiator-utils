@@ -1,6 +1,6 @@
 %global open_iscsi_version	2.1
-%global open_iscsi_build	9
-%global commit0			a65a472a35b436c7a2d47c5862aae530ac4ae9c8
+%global open_iscsi_build	11
+%global commit0			4b3e853ab468a95d8a035efa8fc4298a6c6318a3
 %global shortcommit0		%(c=%{commit0}; echo ${c:0:7})
 
 # Disable python2 build by default
@@ -10,7 +10,7 @@
 Summary: iSCSI daemon and utility programs
 Name: iscsi-initiator-utils
 Version: 6.%{open_iscsi_version}.%{open_iscsi_build}
-Release: 1.git%{shortcommit0}%{?dist}
+Release: 0.git%{shortcommit0}%{?dist}
 License: GPL-2.0-or-later
 URL: https://github.com/open-iscsi/open-iscsi
 Source0: https://github.com/open-iscsi/open-iscsi/archive/%{commit0}.tar.gz#/open-iscsi-%{shortcommit0}.tar.gz
@@ -113,7 +113,7 @@ libiscsi interface for interacting with %{name}
 # avoid undefined references linking failures
 %undefine _ld_as_needed
 
-%meson -Diqn_prefix=iqn.1994-05.com.redhat
+%meson -Diqn_prefix=iqn.1994-05.com.redhat -Discsi_sbindir=%{_sbindir}
 %meson_build
 
 %make_build LDFLAGS="%{build_ldflags}" iqn_prefix=iqn.1994-05.com.redhat DBROOT=/var/lib/iscsi libiscsi
@@ -146,11 +146,11 @@ touch $RPM_BUILD_ROOT%{_rundir}/lock/iscsi/lock
 rm $RPM_BUILD_ROOT/etc/iscsi/initiatorname.iscsi
 rm $RPM_BUILD_ROOT/etc/udev/rules.d/50-iscsi-firmware-login.rules
 rm $RPM_BUILD_ROOT/usr/lib/systemd/system-generators/ibft-rule-generator
-rm $RPM_BUILD_ROOT/usr/sbin/brcm_iscsiuio
-rm $RPM_BUILD_ROOT/usr/sbin/iscsi-gen-initiatorname
-rm $RPM_BUILD_ROOT/usr/sbin/iscsi_discovery
-rm $RPM_BUILD_ROOT/usr/sbin/iscsi_fw_login
-rm $RPM_BUILD_ROOT/usr/sbin/iscsi_offload
+rm $RPM_BUILD_ROOT/%{_sbindir}/brcm_iscsiuio
+rm $RPM_BUILD_ROOT/%{_sbindir}/iscsi-gen-initiatorname
+rm $RPM_BUILD_ROOT/%{_sbindir}/iscsi_discovery
+rm $RPM_BUILD_ROOT/%{_sbindir}/iscsi_fw_login
+rm $RPM_BUILD_ROOT/%{_sbindir}/iscsi_offload
 rm $RPM_BUILD_ROOT/usr/share/man/man8/iscsi-gen-initiatorname.8
 rm $RPM_BUILD_ROOT/usr/share/man/man8/iscsi_discovery.8
 rm $RPM_BUILD_ROOT/usr/share/man/man8/iscsi_fw_login.8
@@ -271,6 +271,9 @@ systemctl --no-reload preset iscsi.service iscsi-starter.service &>/dev/null || 
 %endif
 
 %changelog
+* Wed May 07 2025 Chris Leech <cleech@redhat.com> - 6.2.1.11-0.git4b3e853
+- Open-iSCSI upstream 2.1.11
+
 * Wed Nov 15 2023 Chris Leech <cleech@redhat.com> - 6.2.1.9-18.gita65a472
 - rebase to upstream 2.1.9+ with iscsiuio 0.7.8.8
 - new meson build system, sync with fedora packaging
