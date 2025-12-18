@@ -13,7 +13,7 @@
 Summary: iSCSI daemon and utility programs
 Name: iscsi-initiator-utils
 Version: 6.%{open_iscsi_version}.%{open_iscsi_build}
-Release: 8.git%{shortcommit0}%{?dist}
+Release: 9.git%{shortcommit0}%{?dist}
 Group: System Environment/Daemons
 License: GPLv2+
 URL: http://www.open-iscsi.org
@@ -45,6 +45,7 @@ Patch0021: 0021-use-Red-Hat-version-string-to-match-RPM-package-vers.patch
 Patch0022: 0022-iscsi_if.h-replace-zero-length-array-with-flexible-a.patch
 Patch0023: 0023-stop-using-Werror-for-now.patch
 Patch0024: 0024-iscsistart-fix-null-pointer-deref-before-exit.patch
+Patch0025: 0025-iscsid-stop-connection-for-recovery-if-error-is-not-.patch
 
 BuildRequires: flex bison doxygen kmod-devel systemd-units
 BuildRequires: autoconf automake libtool libmount-devel openssl-devel
@@ -364,6 +365,9 @@ fi
 %{python3_sitearch}/*
 
 %changelog
+* Mon Jun 09 2025 Chris Leech <cleech@redhat.com> - 6.2.1.4-9.git095f59c
+- backport patch for RHEL-82415 iSCSI paths fail to get reinstated
+
 * Thu Jun 15 2023 Chris Leech <cleech@redhat.com> - 6.2.1.4-8.git095f59c
 - fix gating test
 

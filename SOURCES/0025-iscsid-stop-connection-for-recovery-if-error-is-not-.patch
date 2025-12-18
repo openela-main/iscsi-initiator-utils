@@ -1,0 +1,70 @@
+From 9f2074568e6c39f85c9d948cb3b869f4fc774695 Mon Sep 17 00:00:00 2001
+From: Wenchao Hao <73930449+wenchao-hao@users.noreply.github.com>
+Date: Thu, 12 Jan 2023 11:10:05 +0800
+Subject: [PATCH 1/1] iscsid: stop connection for recovery if error is not
+ timeout in iscsi_login_eh (#388)
+
+When iscsid is reopening a connection, and the reopen process has succeed
+to call bind_conn and comes to iscsi_session_set_params() to set
+parameters. If the iscsi target trigger another error event(such as
+close the socket connection between initiator and target) at this time,
+kernel would perform the error handler and set connection's state to
+ISCSI_CONN_FAILED, and set kernel iscsi_cls_conn->flags'
+ISCSI_CLS_CONN_BIT_CLEANUP bit. Which would make iscsid's
+iscsi_session_set_params() failed with ENOTCONN, so iscsi_login_eh()
+would be called by iscsid to handle this error.
+
+Now iscsid see conn->state is ISCSI_CONN_STATE_XPT_WAIT and
+session->r_stage is R_STAGE_SESSION_REOPEN, so it would call
+session_conn_reopen() with do_stop set to 0, which would not trigger
+kernel to call iscsi_if_stop_conn() to clear kernel data struct
+iscsi_cls_conn->flags' ISCSI_CLS_CONN_BIT_CLEANUP bit.
+
+The reopen would fall into an infinite cycle which looks like
+following:
+
+iscsi_conn_connect -> bind_conn(failed with ENOTCONN)
+
+         ^                     |
+         |                     |
+         |                     v
+
+    session_conn_reopwn(with do_stop set to 0)
+
+The phenomenon is iscsid would always report log "can't bind conn x:0
+to session x, retcode -107 (115)" and the session would not recovery.
+
+Fix this issue by checking error type in iscsi_login_eh(), if the error
+type is not timeout, make sure we would call session_conn_reopen() with
+do_stop set to STOP_CONN_RECOVER.
+
+Signed-off-by: Wenchao Hao <haowenchao@huawei.com>
+
+Signed-off-by: Wenchao Hao <haowenchao@huawei.com>
+---
+ usr/initiator.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/usr/initiator.c b/usr/initiator.c
+index 56bf38b..9c48dd5 100644
+--- a/usr/initiator.c
++++ b/usr/initiator.c
+@@ -735,8 +735,13 @@ static void iscsi_login_eh(struct iscsi_conn *conn, struct queue_task *qtask,
+ 				session_conn_shutdown(conn, qtask, err);
+ 				break;
+ 			}
+-			/* timeout during reopen connect. try again */
+-			session_conn_reopen(conn, qtask, 0);
++			/*
++			 * stop connection for recovery if error is not
++			 * timeout
++			 */
++			if (err != ISCSI_ERR_TRANS_TIMEOUT)
++				stop_flag = STOP_CONN_RECOVER;
++			session_conn_reopen(conn, qtask, stop_flag);
+ 			break;
+ 		case R_STAGE_SESSION_CLEANUP:
+ 			session_conn_shutdown(conn, qtask, err);
+-- 
+2.49.0
+
