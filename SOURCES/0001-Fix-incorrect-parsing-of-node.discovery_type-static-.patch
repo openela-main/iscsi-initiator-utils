@@ -1,0 +1,59 @@
+From 290d16d6c6b6f4c78af119eb874484b2f995dc23 Mon Sep 17 00:00:00 2001
+From: Mike Andrews <gubblebozer@gmail.com>
+Date: Sun, 28 Dec 2025 19:19:39 -0500
+Subject: [PATCH 1/1] Fix incorrect parsing of node.discovery_type "static" and
+ "fw" (#518)
+
+Remove the unused DISCOVERY_TYPE_SLP enumeration value so that the strings
+"static" and "fw" map to the correct enum values.
+
+Previous versions supported an "slp" discovery_type.  In d1d456cf28cd89, the
+"slp" string was removed from the list of TYPE_INT_O string arguments when
+processing DISC_TYPE and NODE_DISC_TYPE records in idbm_recinfo_discovery and
+_idbm_node_rec_link.  But, it was left in the discovery_type enum.  The
+resulting parsing logic would then map the string values "static" and "fw" to
+the wrong enum values, and thus logic with unique action on
+DISCOVERY_TYPE_STATIC and DISCOVERY_TYPE_FW did the wrong thing.  Specifically,
+
+- "static" mapped to DISCOVERY_TYPE_SLP, and
+- "fw" mapped to DISCOVERY_TYPE_STATIC.
+
+One manifestation of this bug is that you can no longer use iscsiadm to
+manipulate or delete nodes with discovery_type = "static", as it falls through
+to the default case in setup_disc_to_node_link.
+
+Fixes #463.
+---
+ libopeniscsiusr/idbm.h | 2 --
+ usr/config.h           | 2 --
+ 2 files changed, 4 deletions(-)
+
+diff --git a/libopeniscsiusr/idbm.h b/libopeniscsiusr/idbm.h
+index 0b201f4..512851d 100644
+--- a/libopeniscsiusr/idbm.h
++++ b/libopeniscsiusr/idbm.h
+@@ -78,8 +78,6 @@ enum discovery_type {
+ 	DISCOVERY_TYPE_SENDTARGETS,
+ 	DISCOVERY_TYPE_ISNS,
+ 	DISCOVERY_TYPE_OFFLOAD_SENDTARGETS,
+-	/* SLP is Not Used --  kept as place holder */
+-	DISCOVERY_TYPE_SLP_NOT_IMPLEMENTED,
+ 	DISCOVERY_TYPE_STATIC,
+ 	DISCOVERY_TYPE_FW,
+ };
+diff --git a/usr/config.h b/usr/config.h
+index a38a25d..94a8ad0 100644
+--- a/usr/config.h
++++ b/usr/config.h
+@@ -161,8 +161,6 @@ typedef enum discovery_type {
+ 	DISCOVERY_TYPE_SENDTARGETS,
+ 	DISCOVERY_TYPE_ISNS,
+ 	DISCOVERY_TYPE_OFFLOAD_SENDTARGETS,
+-	/* SLP is Not Used --  kept as place holder */
+-	DISCOVERY_TYPE_SLP_NOT_IMPLEMENTED,
+ 	DISCOVERY_TYPE_STATIC,
+ 	DISCOVERY_TYPE_FW,
+ } discovery_type_e;
+-- 
+2.54.0
+
