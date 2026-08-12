@@ -10,14 +10,17 @@
 Summary: iSCSI daemon and utility programs
 Name: iscsi-initiator-utils
 Version: 6.%{open_iscsi_version}.%{open_iscsi_build}
-Release: 0.git%{shortcommit0}%{?dist}
+Release: 1.git%{shortcommit0}%{?dist}.2
 License: GPL-2.0-or-later
 URL: https://github.com/open-iscsi/open-iscsi
 Source0: https://github.com/open-iscsi/open-iscsi/archive/%{commit0}.tar.gz#/open-iscsi-%{shortcommit0}.tar.gz
 Source4: 04-iscsi
 Source5: iscsi-tmpfiles.conf
 
-Patch01: 0001-meson-don-t-hide-things-with-Wno-all.patch
+Patch00: 0001-meson-don-t-hide-things-with-Wno-all.patch
+
+# https://github.com/open-iscsi/open-iscsi/commit/290d16d6c6b6f4c78af119eb874484b2f995dc23
+Patch01: 0001-Fix-incorrect-parsing-of-node.discovery_type-static-.patch
 
 # https://github.com/open-iscsi/open-iscsi/pull/394/
 Patch02: 0002-Currently-when-iscsi.service-is-installed-it-creates.patch
@@ -37,6 +40,11 @@ Patch101: 0101-libiscsi.patch
 Patch102: 0102-libiscsi-introduce-sessions-API.patch
 Patch103: 0103-fix-libiscsi-firmware-discovery-issue-with-NULL-drec.patch
 Patch104: 0104-libiscsi-build-fixes.patch
+
+# https://issues.redhat.com/browse/RHEL-219481
+# https://issues.redhat.com/browse/RHEL-219469
+# https://github.com/open-iscsi/open-iscsi/commit/668ca1df9c9a1e9bdd5c999ae1d67c9c8909237e
+Patch105: iscsi-initiator-utils-6.2.1.11-RHEL-219481.patch
 
 BuildRequires: meson git
 BuildRequires: flex bison doxygen kmod-devel systemd-units
@@ -271,6 +279,17 @@ systemctl --no-reload preset iscsi.service iscsi-starter.service &>/dev/null || 
 %endif
 
 %changelog
+* Thu Jul 30 2026 RHEL Packaging Agent <redhat-ymir-agent@redhat.com> - 6.2.1.11-1.git4b3e853.2
+- fix CVE-2026-44943: path traversal via IQN names in discovery
+- fix CVE-2026-44944: iscsiuio socket credential verification bypass
+
+* Thu Jul 30 2026 RHEL Packaging Agent <redhat-ymir-agent@redhat.com> - 6.2.1.11-1.git4b3e853.1
+- fix CVE-2026-44943: path traversal via IQN names in discovery
+- fix CVE-2026-44944: iscsiuio socket credential verification bypass
+
+* Thu Jun 25 2026 Chris Leech <cleech@redhat.com> - 6.2.1.11-1.git4b3e853
+- fix regression in fw and static node records
+
 * Wed May 07 2025 Chris Leech <cleech@redhat.com> - 6.2.1.11-0.git4b3e853
 - Open-iSCSI upstream 2.1.11
 
