@@ -10,7 +10,7 @@
 Summary: iSCSI daemon and utility programs
 Name: iscsi-initiator-utils
 Version: 6.%{open_iscsi_version}.%{open_iscsi_build}
-Release: 1.git%{shortcommit0}%{?dist}.2
+Release: 4.git%{shortcommit0}%{?dist}
 License: GPL-2.0-or-later
 URL: https://github.com/open-iscsi/open-iscsi
 Source0: https://github.com/open-iscsi/open-iscsi/archive/%{commit0}.tar.gz#/open-iscsi-%{shortcommit0}.tar.gz
@@ -34,6 +34,8 @@ Patch07: 0007-Disable-Data-Digests.patch
 Patch08: 0008-Revert-iscsiadm-return-error-when-login-fails.patch
 Patch09: 0009-Coverity-scan-fixes.patch
 Patch10: 0010-use-Red-Hat-version-string-to-match-RPM-package-vers.patch
+Patch11: 0011-iscsi-gen-initiatorname-use-IQN_PREFIX-as-default.patch
+Patch12: 0012-iscsi-init.service-Use-iscsi-gen-initiatorname.patch
 
 # libiscsi, deprecated but still needed until UDisks2 is converted to libopeniscsiusr
 Patch101: 0101-libiscsi.patch
@@ -41,10 +43,9 @@ Patch102: 0102-libiscsi-introduce-sessions-API.patch
 Patch103: 0103-fix-libiscsi-firmware-discovery-issue-with-NULL-drec.patch
 Patch104: 0104-libiscsi-build-fixes.patch
 
-# https://issues.redhat.com/browse/RHEL-219481
-# https://issues.redhat.com/browse/RHEL-219469
 # https://github.com/open-iscsi/open-iscsi/commit/668ca1df9c9a1e9bdd5c999ae1d67c9c8909237e
-Patch105: iscsi-initiator-utils-6.2.1.11-RHEL-219481.patch
+# https://github.com/open-iscsi/open-iscsi/commit/3f747d10ce743483a5d5e9512eb28a08b12d9677
+Patch105: iscsi-initiator-utils-6.2.1.11-RHEL-219482.patch
 
 BuildRequires: meson git
 BuildRequires: flex bison doxygen kmod-devel systemd-units
@@ -155,11 +156,9 @@ rm $RPM_BUILD_ROOT/etc/iscsi/initiatorname.iscsi
 rm $RPM_BUILD_ROOT/etc/udev/rules.d/50-iscsi-firmware-login.rules
 rm $RPM_BUILD_ROOT/usr/lib/systemd/system-generators/ibft-rule-generator
 rm $RPM_BUILD_ROOT/%{_sbindir}/brcm_iscsiuio
-rm $RPM_BUILD_ROOT/%{_sbindir}/iscsi-gen-initiatorname
 rm $RPM_BUILD_ROOT/%{_sbindir}/iscsi_discovery
 rm $RPM_BUILD_ROOT/%{_sbindir}/iscsi_fw_login
 rm $RPM_BUILD_ROOT/%{_sbindir}/iscsi_offload
-rm $RPM_BUILD_ROOT/usr/share/man/man8/iscsi-gen-initiatorname.8
 rm $RPM_BUILD_ROOT/usr/share/man/man8/iscsi_discovery.8
 rm $RPM_BUILD_ROOT/usr/share/man/man8/iscsi_fw_login.8
 rm $RPM_BUILD_ROOT/var/lib/iscsi/ifaces/iface.example
@@ -237,11 +236,13 @@ systemctl --no-reload preset iscsi.service iscsi-starter.service &>/dev/null || 
 %dir %{_sysconfdir}/iscsi
 %attr(0600,root,root) %config(noreplace) %{_sysconfdir}/iscsi/iscsid.conf
 %{_sbindir}/iscsi-iname
+%{_sbindir}/iscsi-gen-initiatorname
 %{_sbindir}/iscsiadm
 %{_sbindir}/iscsid
 %{_sbindir}/iscsistart
 %{_libdir}/libiscsi.so.0
 %{_mandir}/man8/iscsi-iname.8.gz
+%{_mandir}/man8/iscsi-gen-initiatorname.8.gz
 %{_mandir}/man8/iscsiadm.8.gz
 %{_mandir}/man8/iscsid.8.gz
 %{_mandir}/man8/iscsistart.8.gz
@@ -279,13 +280,13 @@ systemctl --no-reload preset iscsi.service iscsi-starter.service &>/dev/null || 
 %endif
 
 %changelog
-* Thu Jul 30 2026 RHEL Packaging Agent <redhat-ymir-agent@redhat.com> - 6.2.1.11-1.git4b3e853.2
-- fix CVE-2026-44943: path traversal via IQN names in discovery
-- fix CVE-2026-44944: iscsiuio socket credential verification bypass
+* Tue Aug 11 2026 RHEL Packaging Agent <redhat-ymir-agent@redhat.com> - 6.2.1.11-4.git4b3e853
+- fix CVE-2026-44943: validate IQN names to prevent path traversal
+- fix CVE-2026-44944: iscsiuio control-socket credential verification
 
-* Thu Jul 30 2026 RHEL Packaging Agent <redhat-ymir-agent@redhat.com> - 6.2.1.11-1.git4b3e853.1
-- fix CVE-2026-44943: path traversal via IQN names in discovery
-- fix CVE-2026-44944: iscsiuio socket credential verification bypass
+* Tue Aug 11 2026 RHEL Packaging Agent <redhat-ymir-agent@redhat.com> - 6.2.1.11-3.git4b3e853
+- fix CVE-2026-44943: validate IQN names to prevent path traversal
+- fix CVE-2026-44944: iscsiuio control-socket credential verification
 
 * Thu Jun 25 2026 Chris Leech <cleech@redhat.com> - 6.2.1.11-1.git4b3e853
 - fix regression in fw and static node records

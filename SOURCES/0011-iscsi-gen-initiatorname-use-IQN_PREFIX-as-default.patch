@@ -1,0 +1,52 @@
+From 880337d6e3feef3bba39a80b06c7f9021131de51 Mon Sep 17 00:00:00 2001
+From: Jesse Taube <jtaubepe@redhat.com>
+Date: Mon, 22 Jun 2026 13:44:50 -0400
+Subject: [PATCH 1/2] iscsi-gen-initiatorname use @IQN_PREFIX@ as default
+
+change iscsi-gen-initiatorname.sh.template to use a configurable default
+IQN prefix instead of hardcoding one, using the @IQN_PREFIX@ variable.
+
+Signed-off-by: Jesse Taube <jtaubepe@redhat.com>
+---
+ utils/Makefile                            | 4 ++--
+ utils/iscsi-gen-initiatorname.sh.template | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/utils/Makefile b/utils/Makefile
+index 2cc41d4..46b3223 100644
+--- a/utils/Makefile
++++ b/utils/Makefile
+@@ -18,7 +18,7 @@ HOMEDIR ?= $(etcdir)/iscsi
+ 
+ RULESDIR ?= $(etcdir)/udev/rules.d
+ 
+-IQN_PREFIX ?= "iqn.2016-04.com.open-iscsi"
++IQN_PREFIX ?= iqn.2016-04.com.open-iscsi
+ 
+ CFLAGS ?= -O2 -fno-inline -g
+ CFLAGS += -Wall -Wextra -Wstrict-prototypes
+@@ -42,7 +42,7 @@ OBJS = iscsi-iname.o md5.o
+ all: $(PROGRAMS) $(SCRIPTS_GENERATED) $(RULESFILES_GENERATED)
+ 
+ $(SCRIPTS_GENERATED): %.sh: %.sh.template
+-	$(SED) -e 's:@SBINDIR@:$(SBINDIR):' -e 's:@HOMEDIR@:$(HOMEDIR):' $? > $@
++	$(SED) -e 's:@SBINDIR@:$(SBINDIR):' -e 's:@HOMEDIR@:$(HOMEDIR):' -e 's:@IQN_PREFIX@:$(IQN_PREFIX):' $? > $@
+ 	$(CHMOD) 755 $@
+ 
+ $(RULESFILES_GENERATED): %.rules: %.rules.template
+diff --git a/utils/iscsi-gen-initiatorname.sh.template b/utils/iscsi-gen-initiatorname.sh.template
+index 5c2bfdf..e533f0f 100644
+--- a/utils/iscsi-gen-initiatorname.sh.template
++++ b/utils/iscsi-gen-initiatorname.sh.template
+@@ -16,7 +16,7 @@ INAME_DIR="@HOMEDIR@"
+ INAME_FILE="$INAME_DIR/initiatorname.iscsi"
+ 
+ # our default IQN prefix
+-DEFAULT_IQN_PREFIX="iqn.1996-04.de.suse:01"
++DEFAULT_IQN_PREFIX="@IQN_PREFIX@"
+ 
+ #
+ # set up comments for initiatorname files using variables
+-- 
+2.54.0
+

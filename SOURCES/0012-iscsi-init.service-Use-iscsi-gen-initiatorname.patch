@@ -1,0 +1,41 @@
+From b5b9609a273afaf91532afcfde89a01bb1b69ac6 Mon Sep 17 00:00:00 2001
+From: Jesse Taube <jtaubepe@redhat.com>
+Date: Mon, 22 Jun 2026 14:01:27 -0400
+Subject: [PATCH 2/2] iscsi-init.service: Use iscsi-gen-initiatorname
+
+The iscsi-init.service should use iscsi-gen-initiatorname to generate
+the initiatorname.iscsi file if it doesn't exist. This is more portable
+then generating it with iscsi-iname.
+
+Signed-off-by: Jesse Taube <jtaubepe@redhat.com>
+---
+ doc/iscsi-gen-initiatorname.8.template  | 2 +-
+ etc/systemd/iscsi-init.service.template | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/doc/iscsi-gen-initiatorname.8.template b/doc/iscsi-gen-initiatorname.8.template
+index 97a6e21..d930a16 100644
+--- a/doc/iscsi-gen-initiatorname.8.template
++++ b/doc/iscsi-gen-initiatorname.8.template
+@@ -36,7 +36,7 @@ Force overwrite of existing initiator name, if present.
+ .TP
+ .BI [-p] \fIIQN-PREFIX\fP
+ Use \fIIQN-PREFIX\fP as the prefix to the IQN generated,
+-instead of the default of \fBiqn.1996-04.de.suse:01\fP.
++instead of the default of \fB@IQN_PREFIX@\fP.
+ .SH FILES
+ .TP
+ @HOMEDIR@/initiatorname.iscsi
+diff --git a/etc/systemd/iscsi-init.service.template b/etc/systemd/iscsi-init.service.template
+index 8f9a8aa..c26c871 100644
+--- a/etc/systemd/iscsi-init.service.template
++++ b/etc/systemd/iscsi-init.service.template
+@@ -16,4 +16,4 @@ WantedBy=systemd-remount-fs.service
+ [Service]
+ Type=oneshot
+ RemainAfterExit=no
+-ExecStart=/usr/bin/sh -c 'echo "InitiatorName=`@SBINDIR@/iscsi-iname`" > /etc/iscsi/initiatorname.iscsi'
++ExecStart=@SBINDIR@/iscsi-gen-initiatorname
+-- 
+2.54.0
+
